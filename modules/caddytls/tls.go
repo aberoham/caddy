@@ -198,9 +198,23 @@ func (t *TLS) Provision(ctx caddy.Context) error {
 	}
 	if t.Cache != nil {
 		cacheOpts.Capacity = t.Cache.Capacity
+		cacheOpts.MaxMemoryMB = t.Cache.MaxMemoryMB
+		cacheOpts.EvictionPolicy = t.Cache.EvictionPolicy
+		// Default to compression enabled if not explicitly set
+		if t.Cache.EnableCompression != nil {
+			cacheOpts.EnableCompression = *t.Cache.EnableCompression
+		} else {
+			cacheOpts.EnableCompression = true // Default to enabled for memory savings
+		}
+	} else {
+		// Default settings when no cache config provided
+		cacheOpts.EnableCompression = true // Default to enabled for memory savings
 	}
 	if cacheOpts.Capacity <= 0 {
 		cacheOpts.Capacity = 10000
+	}
+	if cacheOpts.EvictionPolicy == "" {
+		cacheOpts.EvictionPolicy = "lru"
 	}
 
 	certCacheMu.Lock()
@@ -923,6 +937,20 @@ type CertCacheOptions struct {
 	// cache. If reached, certificates will be randomly
 	// evicted to make room for new ones. Default: 10,000
 	Capacity int `json:"capacity,omitempty"`
+
+	// Maximum memory usage in MB for certificate cache.
+	// If reached, certificates will be evicted according to
+	// EvictionPolicy. 0 means unlimited. Takes precedence over Capacity.
+	MaxMemoryMB int `json:"max_memory_mb,omitempty"`
+
+	// Eviction policy when cache limits are reached.
+	// "lru" (default) for Least Recently Used, "random" for random eviction.
+	EvictionPolicy string `json:"eviction_policy,omitempty"`
+
+	// Enable compression for certificate storage to reduce memory usage.
+	// When enabled, certificates are stored compressed with gzip and decompressed on access.
+	// This can reduce memory usage by 60-70%. Default: true
+	EnableCompression *bool `json:"enable_compression,omitempty"`
 }
 
 // Variables related to storage cleaning.

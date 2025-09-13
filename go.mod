@@ -161,3 +161,5 @@ require (
 	google.golang.org/protobuf v1.36.8 // indirect
 	howett.net/plist v1.0.0 // indirect
 )
+
+replace github.com/caddyserver/certmagic => github.com/aberoham/certmagic v0.0.0-20250913051031-00ef65dc9803
